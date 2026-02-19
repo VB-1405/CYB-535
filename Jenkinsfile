@@ -1,12 +1,16 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'python:3.11-slim'
+      args  '-u root:root'   // lets it write in workspace if needed
+    }
+  }
 
   options {
     timestamps()
   }
 
   environment {
-    VENV_DIR = ".venv"
     PIP_DISABLE_PIP_VERSION_CHECK = "1"
     PYTHONDONTWRITEBYTECODE = "1"
   }
@@ -18,32 +22,12 @@ pipeline {
       }
     }
 
-    stage('Set up Python venv') {
-      steps {
-        sh '''
-          set -euxo pipefail
-
-          if command -v python3 >/dev/null 2>&1; then
-            PY=python3
-          elif command -v python >/dev/null 2>&1; then
-            PY=python
-          else
-            echo "Python not found on agent"
-            exit 1
-          fi
-
-          $PY -m venv "${VENV_DIR}"
-          . "${VENV_DIR}/bin/activate"
-          python -m pip install --upgrade pip wheel setuptools
-        '''
-      }
-    }
-
     stage('Install dependencies') {
       steps {
         sh '''
           set -euxo pipefail
-          . "${VENV_DIR}/bin/activate"
+          python -V
+          pip install --upgrade pip wheel setuptools
 
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
@@ -58,11 +42,8 @@ pipeline {
       steps {
         sh '''
           set -euxo pipefail
-          . "${VENV_DIR}/bin/activate"
-
           export PYTHONPATH="$PWD"
           mkdir -p reports
-
           pytest -q --junitxml=reports/pytest-junit.xml
         '''
       }
@@ -77,7 +58,6 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
-      sh 'rm -rf .venv || true'
     }
   }
 }
