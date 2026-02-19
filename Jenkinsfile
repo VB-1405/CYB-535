@@ -3,7 +3,6 @@ pipeline {
 
   options {
     timestamps()
-    ansiColor('xterm')
   }
 
   environment {
@@ -24,7 +23,6 @@ pipeline {
         sh '''
           set -euxo pipefail
 
-          # Try common python executables
           if command -v python3 >/dev/null 2>&1; then
             PY=python3
           elif command -v python >/dev/null 2>&1; then
@@ -35,7 +33,6 @@ pipeline {
           fi
 
           $PY -m venv "${VENV_DIR}"
-
           . "${VENV_DIR}/bin/activate"
           python -m pip install --upgrade pip wheel setuptools
         '''
@@ -48,14 +45,11 @@ pipeline {
           set -euxo pipefail
           . "${VENV_DIR}/bin/activate"
 
-          # If you have requirements.txt, use it; otherwise just install pytest
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           else
             pip install pytest
           fi
-
-          # For JUnit XML output support (pytest already supports it, no extra needed)
         '''
       }
     }
@@ -66,8 +60,8 @@ pipeline {
           set -euxo pipefail
           . "${VENV_DIR}/bin/activate"
 
-          # Ensure project root is on PYTHONPATH so "from mathutils_py import MathUtils" works
           export PYTHONPATH="$PWD"
+          mkdir -p reports
 
           pytest -q --junitxml=reports/pytest-junit.xml
         '''
