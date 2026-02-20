@@ -36,4 +36,13 @@ pipeline {
             script {
                 echo '--- Archiving Test Results ---'
                 junit 'python-test-results.xml'
-                junit 'JavaProject/target/suref
+                junit 'JavaProject/target/surefire-reports/*.xml'
+            }
+
+            script {
+                echo '--- Archiving Build Artifacts ---'
+                archiveArtifacts artifacts: 'JavaProject/target/*.jar', followSymlinks: false
+            }
+        }
+    }
+}
